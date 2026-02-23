@@ -510,7 +510,8 @@ def register_lakeflow_source(spark):
 
             return {
                 "primary_keys": ["id"],
-                "ingestion_type": "snapshot",
+                "cursor_field": "id",
+                "ingestion_type": "append",
             }
 
         def read_table(
@@ -538,14 +539,11 @@ def register_lakeflow_source(spark):
             if current_id > self.max_pokemon_id:
                 return iter([]), start_offset
 
-            # Calculate end ID for this batch
-            end_id = min(current_id + self.batch_size - 1, self.max_pokemon_id)
+            # Fetch all remaining Pokemon from current_id to max_pokemon_id
+            data_iterator = self._fetch_pokemon_batch(current_id, self.max_pokemon_id)
 
-            # Fetch Pokemon data
-            data_iterator = self._fetch_pokemon_batch(current_id, end_id)
-
-            # Return iterator and next offset
-            next_offset = {"last_id": end_id}
+            # Return iterator and final offset
+            next_offset = {"last_id": self.max_pokemon_id}
 
             return data_iterator, next_offset
 
